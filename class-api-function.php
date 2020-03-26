@@ -6,8 +6,6 @@
 
 class Api_Function {
 
-
-
 			public function __construct()
 
 			{
@@ -406,7 +404,6 @@ class Api_Function {
 						    return $response;
 						  }
 
-					    
 					    	 
                             $query  = $wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $otpId);
                             $result = $wpdb->get_results($query);
