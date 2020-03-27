@@ -6,6 +6,8 @@
 
 class Api_Function {
 
+
+
 			public function __construct()
 
 			{
@@ -99,6 +101,60 @@ class Api_Function {
 			  ));
 
 
+               /**
+			   * Handle pricing content request.
+			   */
+			  register_rest_route('ck', 'pricing', array(
+			    'methods' => 'GET',
+			    'callback' => array($this,'wc_rest_user_endpoint_pricing_handler'),
+			  ));
+
+			   /**
+			   * Handle help content request.
+			   */
+			  register_rest_route('ck', 'help', array(
+			    'methods' => 'GET',
+			    'callback' => array($this,'wc_rest_user_endpoint_help_handler'),
+			  ));
+
+			   /**
+			   * Handle faq (General) content request.
+			   */
+			  register_rest_route('ck', 'faq/general/(?P<id>\d+)', array(
+			    'methods' => 'GET',
+			    'callback' => array($this,'wc_rest_user_endpoint_faq_general_handler'),
+			  ));
+
+			  /**
+			   * Handle FAQ By country content request.
+			   */
+			  register_rest_route('ck', 'faq/country/(?P<id>\d+)', array(
+			    'methods' => 'GET',
+			    'callback' => array($this,'wc_rest_user_endpoint_faq_country_handler'),
+			  ));
+               
+
+               /**
+			   * Handle privacy-policy content request.
+			   */
+			  register_rest_route('ck', '/privacy-policy', array(
+			    'methods' => 'GET',
+			    'callback' => array($this,'wc_rest_user_endpoint_privacy_policy_handler'),
+			  ));
+
+
+			   /**
+			   * Handle privacy-policy content request.
+			   */
+			  register_rest_route('ck', 'users/logout', array(
+			    'methods' => 'POST',
+			    'callback' => array($this,'wc_rest_user_endpoint_logout_handler'),
+			  ));
+
+
+
+
+
 
 
 
@@ -130,6 +186,7 @@ class Api_Function {
 			    $creds['user_password'] =  $request["password"];
 			    $creds['remember'] = true;
 			    $user = wp_signon( $creds, true );
+
 
 			    if ( is_wp_error($user) )
 			      return $user->get_error_message();
@@ -404,6 +461,7 @@ class Api_Function {
 						    return $response;
 						  }
 
+					    
 					    	 
                             $query  = $wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $otpId);
                             $result = $wpdb->get_results($query);
@@ -435,6 +493,171 @@ class Api_Function {
 						
 
 						return $response;
+
+			}
+
+
+
+
+			public function wc_rest_user_endpoint_pricing_handler(){
+				
+				$page_id = 69;
+				$pricing_data = array();
+				if( have_rows('pricing_app', $page_id) ): 
+				while( have_rows('pricing_app', $page_id) ): the_row(); 
+					      $title = '';
+					      $content = '';
+				         $title = get_sub_field('pricing_title'); 
+				         $content = get_sub_field('pricing_content'); 
+				         $pricing_data[] = array('title' => $title, 'content' => $content);
+
+				endwhile; 
+				endif; 
+
+				return $pricing_data;
+			}
+
+
+			public function wc_rest_user_endpoint_help_handler(){
+
+				    $page_id = 71;
+				    $help_data = array();
+					if( have_rows('help_api_post', $page_id) ): 
+					while( have_rows('help_api_post', $page_id) ): the_row(); 
+
+						     $post_item = '';
+						   
+					         $post_item = get_sub_field('help_item'); 
+					         $excerpt = get_the_excerpt($post_item->ID);
+					         $help_data[] = array('id' => $post_item->ID, 'title' => $post_item->post_title, 'sort_content' => $excerpt, 'content' => $post_item->post_content);
+
+					endwhile; 
+
+					endif; 
+
+					return $help_data;
+
+
+			}
+
+
+
+			public function wc_rest_user_endpoint_faq_general_handler($request){
+				     $response = array();
+				     $page_id = $request['id'];
+
+					$faq_data = array();
+					if( have_rows('faq_item', $page_id) ){
+					while( have_rows('faq_item', $page_id) ): the_row(); 
+						      $title = '';
+						      $content = '';
+					         $title = get_sub_field('faq_tilte'); 
+					         $content = get_sub_field('faq_content'); 
+					         $faq_data[] = array('title' => $title, 'content' => $content);
+
+					endwhile; 
+					 $response['data'] = $faq_data;
+					}else{
+                     $response['message'] = "FAQ not found ";
+					}
+
+                    return $response;
+
+			}
+			
+			public function wc_rest_user_endpoint_faq_country_handler($request){
+				     $response = array();
+				     $page_id = $request['id'];
+
+					$faq_data = array();
+					if( have_rows('faq_item', $page_id) ){
+					while( have_rows('faq_item', $page_id) ): the_row(); 
+						      $title = '';
+						      $content = '';
+					         $title = get_sub_field('faq_tilte'); 
+					         $content = get_sub_field('faq_content'); 
+					         $faq_data[] = array('title' => $title, 'content' => $content);
+
+					endwhile; 
+					 $response['data'] = $faq_data;
+					}else{
+                     $response['message'] = "FAQ not found ";
+					}
+
+                    return $response;
+
+			}
+
+			public function wc_rest_user_endpoint_privacy_policy_handler(){
+                    $page_id = 192;
+                    $response = array();
+					$post = get_post($page_id);
+					if (!empty($post)) {
+					  $content = $post->post_content;
+					  $response['data'] = $content;
+						
+					}else{
+                       $response['message'] = "Not found ";
+					}
+					
+
+                    return $response;
+
+
+			}
+
+             public function wc_user_destroy_session($verifier, $user_id){
+
+			    $sessions = get_user_meta( $user_id, 'session_tokens', true );
+
+
+			    if(!isset($sessions[$verifier]))
+			        return true;
+
+			    unset($sessions[$verifier]);
+
+			    if(!empty($sessions)){
+			        update_user_meta( $user_id, 'session_tokens', $sessions );
+			        return true;
+			    }
+
+			    delete_user_meta( $user_id, 'session_tokens');
+			    return true;
+
+			}
+
+			public function wc_rest_user_endpoint_logout_handler($request = null){
+				        $response = array();
+					    $parameters = $request->get_json_params();
+					    $user_id = $parameters["user_id"];
+					    $token = $parameters["token"];
+					     if (empty($user_id)) {
+						    $response['message'] = "user_id field 'user_id' is required.";
+						    return $response;
+						  }
+
+						   
+						  if (empty($token)) {
+						    $response['message'] = "token field 'token' is required.";
+						    return $response;
+						  }
+
+                       
+                        if ($this->wc_user_destroy_session($token, $user_id)) {
+                        	$response['message'] = "User id ".$user_id." Logout Successful.";
+                        }else{
+                        	$response['message'] = "error";
+                        }
+
+                        return $response;
+
+
+			}
+
+
+			public function wc_rest_user_endpoint_edit_profile_handler($request = null){
+
+
 
 			}
 
