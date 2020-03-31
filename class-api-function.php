@@ -7,7 +7,6 @@
 class Api_Function {
 
 
-
 			public function __construct()
 
 			{
@@ -47,115 +46,194 @@ class Api_Function {
 
             
 			public function add_api_routes() {
-                 /**
-			   * Handle login User request.
-			   */
+		                 /**
+					   * Handle login User request.
+					   */
 
-			  register_rest_route(
-			    'ck', 'users/login',
-			    array(
-			      'methods'  => 'POST',
-			      'callback' => array($this,'wc_rest_user_endpoint_login_handler'),
-			    )
-			  );
+					  register_rest_route(
+					    'ck', 'users/login',
+					    array(
+					      'methods'  => 'POST',
+					      'callback' => array($this,'wc_rest_user_endpoint_login_handler'),
+					    )
+					  );
 
-			  /**
-			   * Handle Register User request.
-			   */
-			  register_rest_route('ck', 'users/register', array(
-			    'methods' => 'POST',
-			    'callback' => array($this,'wc_rest_user_endpoint_register_handler'),
-			  ));
-
-
-			   /**
-			   * Handle lost-password User request.
-			   */
-			  register_rest_route('ck', 'users/lost-password', array(
-			    'methods' => 'POST',
-			    'callback' => array($this,'wc_rest_user_endpoint_lost_password_handler'),
-			  ));
-
-			  /**
-			   * Handle lost-password verify User request.
-			   */
-			  register_rest_route('ck', 'users/otp-verify', array(
-			    'methods' => 'POST',
-			    'callback' => array($this,'wc_rest_user_endpoint_verify_otp_handler'),
-			  ));
-
-			   /**
-			   * Handle lost-password verify User request.
-			   */
-			  register_rest_route('ck', 'users/update-password', array(
-			    'methods' => 'POST',
-			    'callback' => array($this,'wc_rest_user_endpoint_update_password_handler'),
-			  ));
-
-                /**
-			   * Handle Register User request.
-			   */
-			  register_rest_route('ck', 'users/edit_profile', array(
-			    'methods' => 'PUT',
-			    'callback' => array($this,'wc_rest_user_endpoint_edit_profile_handler'),
-			  ));
+					  /**
+					   * Handle Register User request.
+					   */
+					  register_rest_route('ck', 'users/register', array(
+					    'methods' => 'POST',
+					    'callback' => array($this,'wc_rest_user_endpoint_register_handler'),
+					  ));
 
 
-               /**
-			   * Handle pricing content request.
-			   */
-			  register_rest_route('ck', 'pricing', array(
-			    'methods' => 'GET',
-			    'callback' => array($this,'wc_rest_user_endpoint_pricing_handler'),
-			  ));
+					   /**
+					   * Handle lost-password User request.
+					   */
+					  register_rest_route('ck', 'users/lost-password', array(
+					    'methods' => 'POST',
+					    'callback' => array($this,'wc_rest_user_endpoint_lost_password_handler'),
+					  ));
 
-			   /**
-			   * Handle help content request.
-			   */
-			  register_rest_route('ck', 'help', array(
-			    'methods' => 'GET',
-			    'callback' => array($this,'wc_rest_user_endpoint_help_handler'),
-			  ));
+					  /**
+					   * Handle lost-password verify User request.
+					   */
+					  register_rest_route('ck', 'users/otp-verify', array(
+					    'methods' => 'POST',
+					    'callback' => array($this,'wc_rest_user_endpoint_verify_otp_handler'),
+					  ));
 
-			   /**
-			   * Handle faq (General) content request.
-			   */
-			  register_rest_route('ck', 'faq/general/(?P<id>\d+)', array(
-			    'methods' => 'GET',
-			    'callback' => array($this,'wc_rest_user_endpoint_faq_general_handler'),
-			  ));
+					   /**
+					   * Handle lost-password verify User request.
+					   */
+					  register_rest_route('ck', 'users/update-password', array(
+					    'methods' => 'POST',
+					    'callback' => array($this,'wc_rest_user_endpoint_update_password_handler'),
+					  ));
 
-			  /**
-			   * Handle FAQ By country content request.
-			   */
-			  register_rest_route('ck', 'faq/country/(?P<id>\d+)', array(
-			    'methods' => 'GET',
-			    'callback' => array($this,'wc_rest_user_endpoint_faq_country_handler'),
-			  ));
-               
-
-               /**
-			   * Handle privacy-policy content request.
-			   */
-			  register_rest_route('ck', '/privacy-policy', array(
-			    'methods' => 'GET',
-			    'callback' => array($this,'wc_rest_user_endpoint_privacy_policy_handler'),
-			  ));
+		                /**
+					   * Handle Register User request.
+					   */
+					  register_rest_route('ck', 'users/edit_profile', array(
+					    'methods' => 'PUT',
+					    'callback' => array($this,'wc_rest_user_endpoint_edit_profile_handler'),
+					  ));
 
 
-			   /**
-			   * Handle privacy-policy content request.
-			   */
-			  register_rest_route('ck', 'users/logout', array(
-			    'methods' => 'POST',
-			    'callback' => array($this,'wc_rest_user_endpoint_logout_handler'),
-			  ));
+		               /**
+					   * Handle pricing content request.
+					   */
+					  register_rest_route('ck', 'pricing', array(
+					    'methods' => 'GET',
+					    'callback' => array($this,'wc_rest_user_endpoint_pricing_handler'),
+					  ));
+
+					   /**
+					   * Handle help content request.
+					   */
+					  register_rest_route('ck', 'help', array(
+					    'methods' => 'GET',
+					    'callback' => array($this,'wc_rest_user_endpoint_help_handler'),
+					  ));
+
+					   /**
+					   * Handle faq (General) content request.
+					   */
+					  register_rest_route('ck', 'faq/general/(?P<id>\d+)', array(
+					    'methods' => 'GET',
+					    'callback' => array($this,'wc_rest_user_endpoint_faq_general_handler'),
+					  ));
+
+					  /**
+					   * Handle FAQ By country content request.
+					   */
+					  register_rest_route('ck', 'faq/country/(?P<id>\d+)', array(
+					    'methods' => 'GET',
+					    'callback' => array($this,'wc_rest_user_endpoint_faq_country_handler'),
+					  ));
+		               
+
+		               /**
+					   * Handle privacy-policy content request.
+					   */
+					  register_rest_route('ck', '/privacy-policy', array(
+					    'methods' => 'GET',
+					    'callback' => array($this,'wc_rest_user_endpoint_privacy_policy_handler'),
+					  ));
+
+
+					   /**
+					   * Handle privacy-policy content request.
+					   */
+					  register_rest_route('ck', 'users/logout', array(
+					    'methods' => 'POST',
+					    'callback' => array($this,'wc_rest_user_endpoint_logout_handler'),
+					  ));
+
+					   /**
+					   * Handle statstics content request.
+					   */
+					  register_rest_route('ck', 'statstics', array(
+					    'methods' => 'GET',
+					    'callback' => array($this,'wc_rest_statstics_handler'),
+					  ));
+		                
 
 
 
+					   /**
+					   * Handle Add to Basket content request.
+					   */
+					  register_rest_route('ck', '/cart/add-item', array(
+					    'methods' => 'POST',
+					    'callback' => array($this,'wc_rest_add_to_cart_handler'),
+					    'args'     => array(
+						'product_id' => array(
+							'description'       => __( 'Unique identifier for the product ID.', 'cart-rest-api-for-woocommerce' ),
+							'type'              => 'integer',
+							'validate_callback' => function( $param, $request, $key ) {
+								return is_numeric( $param );
+							}
+						),
+						'quantity' => array(
+							'description'       => __( 'The quantity amount of the item to add to cart.', 'cart-rest-api-for-woocommerce' ),
+							'default'           => 1,
+							'type'              => 'integer',
+							'validate_callback' => function( $param, $request, $key ) {
+								return is_numeric( $param );
+							}
+						),
+						'variation_id' => array(
+							'description'       => __( 'Unique identifier for the variation ID.', 'cart-rest-api-for-woocommerce' ),
+							'type'              => 'integer',
+							'validate_callback' => function( $param, $request, $key ) {
+								return is_numeric( $param );
+							}
+						),
+						'variation' => array(
+							'validate_callback' => function( $param, $request, $key ) {
+								return is_array( $param );
+							}
+						),
+						'cart_item_data' => array(
+							'validate_callback' => function( $param, $request, $key ) {
+								return is_array( $param );
+							}
+						),
+						'refresh_totals' => array(
+							'description' => __( 'Re-calculates the totals once item has been added or the quantity of the item has increased.', 'cart-rest-api-for-woocommerce' ),
+							'default'     => false,
+							'type'        => 'boolean',
+						)
+					)
+					  ));
 
 
+		               // Get Cart of a Customer - get-cart/1 (GET)
+						register_rest_route( 'ck', '/cart/get-cart/(?P<id>[\d]+)', array(
+							'methods'             => 'GET',
+							'callback'            => array( $this, 'get_cart_customer' ),
+							'args'                => array(
+								'id' => array(
+									'required'    => true,
+									'description' => 'Unique identifier for the customer.',
+									'type'        => 'integer',
+								),
+								'thumb' => array(
+									'description' => 'Returns the URL of the product image thumbnail.',
+									'default'     => false,
+									'type'        => 'boolean',
+								),
+							),
+						) );
 
+		                /**
+					   * Handle privacy-policy content request.
+					   */
+					  register_rest_route('ck', 'cart/remove', array(
+					    'methods' => 'DELETE',
+					    'callback' => array($this,'wc_rest_crt_item_remove_handler'),
+					  ));
 
 
 			}
@@ -182,14 +260,18 @@ class Api_Function {
 			
 			public function wc_rest_user_endpoint_login_handler($request){
 			    $creds = array();
+			    $headers = getallheaders();
 			    $creds['user_login'] = $request["username"];
 			    $creds['user_password'] =  $request["password"];
 			    $creds['remember'] = true;
+			   // $user = wp_authenticate( $request["username"], $request["password"] );
 			    $user = wp_signon( $creds, true );
-
+			  
 
 			    if ( is_wp_error($user) )
 			      return $user->get_error_message();
+
+			    wp_set_current_user( $user->ID, $creds['user_login'] );
 
 			    $id = $user->ID;
 			    $meta = get_user_meta($id);
@@ -265,6 +347,10 @@ class Api_Function {
 					      // Ger User Meta Data (Sensitive, Password included. DO NOT pass to front end.)
 					      $user = get_user_by('id', $user_id);
 					      $user->set_role('subscriber');
+					      // WooCommerce specific code
+					      if (class_exists('WooCommerce')) {
+					        $user->set_role('customer');
+					      }
 					      $userdata = $this->get_user_info_arry($user_id);
 					      	
 					     update_user_meta( $user_id, 'billing_first_name', $first_name );
@@ -364,11 +450,7 @@ class Api_Function {
                          
                     )
                       );
-					//return $otp;
-					//$rp_link = '<a href="' . site_url() . "/wp-login.php?action=rp&key=$key&login=" . rawurlencode($user->user_login) . '">' . site_url() . "/wp-login.php?action=rp&key=$key&login=" . rawurlencode($user->user_login) . '';
-
-
-					//$passdata = $random_password;
+					
 
 					function wpdocs_set_html_mail_content_type() {
 						return 'text/html';
@@ -655,7 +737,135 @@ class Api_Function {
 			}
 
 
-			public function wc_rest_user_endpoint_edit_profile_handler($request = null){
+
+			public function get_cart_customer( $data = array(), $cart_item_key = '' ) {
+
+                        $response = array();
+					    $headers = getallheaders();
+					    $verifier = $headers['authtoken'];
+					    $user_id = $headers['user_id'];
+						  if ( empty( $data['id'] ) ) {
+							return new WP_Error( 'ck_customer_missing', 'Customer ID is required!', array( 'status' => 500 ) );
+						  }
+					      if (empty($user_id)) {
+						    $response['message'] = "user_id field 'user_id' is required.";
+						    return $response;
+						  }
+
+						  if (empty($verifier)) {
+						    $response['message'] = "token field 'token' is required.";
+						    return $response;
+						  }
+                           if($this->chek_user_login($user_id, $verifier)){
+                               $saved_cart = $this->get_saved_cart( $data );
+                               $response['data'] = $saved_cart;
+                           }else{
+                              $response['message'] = "cart not found";
+
+                           }
+
+                           return $response;
+					
+
+					    
+				} // END get_cart_customer()
+
+            public function get_saved_cart( $data = array() ) {
+				$saved_cart = array();
+
+				$customer_id = ! empty( $data['id'] ) ? $data['id'] : 0;
+
+				if ( $customer_id > 0 ) {
+					$saved_cart_meta = get_user_meta( $customer_id, '_woocommerce_persistent_cart_' . get_current_blog_id(), true );
+
+					if ( isset( $saved_cart_meta['cart'] ) ) {
+						$saved_cart = array_filter( (array) $saved_cart_meta['cart'] );
+					}
+				}
+
+				return $saved_cart;
+			} // END get_saved_cart()
+
+
+
+
+			public function chek_user_login($user_id, $verifier){
+				          $vaild = false;
+
+				          $sessions = get_user_meta( $user_id, 'session_tokens', true );
+		                  if(empty($sessions)){
+			                 $vaild = false;
+			              }
+                            
+			               $token_data = $sessions[$verifier];
+
+                           $expiration = date('Y-m-d H:i:s', $token_data['expiration']);
+                           if($expiration >= date("Y-m-d H:i:s")){
+                           $vaild = true;
+
+                           }else{
+                             $vaild = false;
+                           }
+                            return $vaild;
+
+
+			}
+
+			public function wc_rest_add_to_cart_handler($data = array() ){
+				        $response = array();
+					    global $woocommerce,$wpdb;
+					    $headers = getallheaders();
+					    $verifier = $headers['authtoken'];
+					    $user_id = $headers['user_id'];
+					      if (empty($user_id)) {
+						    $response['message'] = "user_id field 'user_id' is required.";
+						    return $response;
+						  }
+
+						  if (empty($verifier)) {
+						    $response['message'] = "token field 'token' is required.";
+						    return $response;
+						  }
+						  if (empty($data['product_id'])) {
+						    $response['message'] = "product_id field 'product_id' is required.";
+						    return $response;
+						  }
+						  if (empty($data['cart_item_data'])) {
+						    $response['message'] = "cart_item_data field 'cart_item_data' is required.";
+						    return $response;
+						  }
+						  if (empty($data['quantity'])) {
+						    $response['message'] = "quantity field 'quantity' is required.";
+						    return $response;
+						  }
+
+					    $product_id     = $data['product_id'];
+						$quantity       = $data['quantity'];
+						$cart_item_data = $data['cart_item_data'];
+				
+		                $item_added = array();
+		              
+		             
+		                 // Generate a ID based on product ID, variation ID, variation data, and other cart item data.
+		                 $cart_id = WC()->cart->generate_cart_id( $product_id, '', '', $cart_item_data );
+		                
+		                    
+			                if($this->chek_user_login($user_id, $verifier)){ // only update if session is not expired 
+                                wp_set_auth_cookie($headers['user_id']);
+			                	$item_key = WC()->cart->add_to_cart( $product_id, $quantity, '', '', $cart_item_data );
+
+			                	
+								 // Return response to added item to cart or return error.
+								if ( $item_key ) {
+									$response['data'] = WC()->cart->get_cart();
+								} else {
+									/* translators: %s: product name */
+									return new WP_Error( 'ck_cannot_add_to_cart',  'You cannot add  to your cart is already in your cart.', array( 'status' => 500 ) );
+								}
+			              
+							}
+
+					      return$response;
 
 
 
@@ -663,8 +873,82 @@ class Api_Function {
 
 
 
+			public function wc_rest_crt_item_remove_handler($request = null){
+				       $response = array();
+					   $parameters = $request->get_json_params();
+
+					   $cart_item_key = $parameters['cart_item_key'];
+					   $headers = getallheaders();
+
+					   if (empty($cart_item_key)) {
+						    $response['message'] = "cart_item_key field 'cart_item_key' is required.";
+						    return $response;
+						  }
+                         $verifier = $headers['authtoken'];
+					     $user_id = $headers['user_id'];
+						
+					      if (empty($user_id)) {
+						    $response['message'] = "user_id field 'user_id' is required.";
+						    return $response;
+						  }
+
+						  if (empty($verifier)) {
+						    $response['message'] = "token field 'token' is required.";
+						    return $response;
+						  }
+
+						   if($this->chek_user_login($user_id, $verifier)){
+                              // Checks to see if the cart is empty before attempting to remove item.
+							if ( WC()->cart->is_empty() ) {
+								return new WP_Error( 'ckcart_no_items', 'No items in cart.', array( 'status' => 500 ) );
+							}
+
+							if ( $cart_item_key != '0' ) {
+								// Check item exists in cart before fetching the cart item data to update.
+		                    	$current_data = WC()->cart->get_cart_item( $cart_item_key );
+		                    	// If item does not exist in cart return response.
+								if ( empty( $current_data ) ) {
+									return new WP_Error( 'ckcart_item_not_in_cart', 'Item specified does not exist in cart.', array( 'status' => 404 ) );
+								}
+
+								if ( WC()->cart->remove_cart_item( $cart_item_key ) ) {
+										return new WP_REST_Response(  'Item has been removed from cart.', 200 );
+									} else {
+										return new WP_Error( 'ckcart_can_not_remove_item', 'Unable to remove item from cart.', array( 'status' => 500 ) );
+									}
+
+							}  
+                           }else{
+                              $response['message'] = "cart not found";
+
+                           }
+
+                           return $response;
+
+
+
+
+			}
+
+
+
+
+			public function wc_rest_statstics_handler($request){
+				     $response = array();
+				     $page_id = 1106;
+				     $statstics_users = get_post_meta( $page_id, 'statstics_users', true );
+				     $statstics_countries = get_post_meta( $page_id, 'statstics_countries', true );
+				     $statstics_currencies = get_post_meta( $page_id, 'statstics_currencies', true );
+				     $statstics_data = array();
+
+				     $statstics_data['statstics'] = array('users' => $statstics_users, 'countries' => $statstics_countries , 'currencies' => $statstics_currencies);
+                    return $statstics_data;
+
+			}
+
 }
 
 new Api_Function();
+
 
 ?>
