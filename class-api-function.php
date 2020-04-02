@@ -219,11 +219,6 @@ class Api_Function {
 									'description' => 'Unique identifier for the customer.',
 									'type'        => 'integer',
 								),
-								'thumb' => array(
-									'description' => 'Returns the URL of the product image thumbnail.',
-									'default'     => false,
-									'type'        => 'boolean',
-								),
 							),
 						) );
 
@@ -815,6 +810,7 @@ class Api_Function {
 				        $response = array();
 					    global $woocommerce,$wpdb;
 					    $headers = getallheaders();
+
 					    $verifier = $headers['authtoken'];
 					    $user_id = $headers['user_id'];
 					      if (empty($user_id)) {
@@ -838,14 +834,36 @@ class Api_Function {
 						    $response['message'] = "quantity field 'quantity' is required.";
 						    return $response;
 						  }
-
+                          
 					    $product_id     = $data['product_id'];
 						$quantity       = $data['quantity'];
 						$cart_item_data = $data['cart_item_data'];
+						
+                                 $_FILES['image']['name'] = $data['image'];
+						if( !empty($_FILES['image']['name'])) {
+						      $upload = wp_upload_bits( $_FILES['image']['name'], null, file_get_contents( $_FILES['image']['tmp_name'] ) );
+
+						      $filetype = wp_check_filetype( basename( $upload['file'] ), null );
+
+						      $upload_dir = wp_upload_dir();
+
+						      $upl_base_url = is_ssl() ? str_replace('http://', 'https://', $upload_dir['baseurl']) : $upload_dir['baseurl'];
+
+						      $base_name = basename( $upload['file'] );
+
+						      $cart_item_data['custom_file'] = array(
+						          'guid'      => $upl_base_url .'/'. _wp_relative_upload_path( $upload['file'] ),
+						          'file_type' => $filetype['type'],
+						          'file_name' => $base_name,
+						          'title'     => preg_replace('/\.[^.]+$/', '', $base_name ),
+						          'side'      => '',
+						          'key'       => md5( microtime().rand() ),
+						      );
+						}
 				
+
 		                $item_added = array();
-		              
-		             
+
 		                 // Generate a ID based on product ID, variation ID, variation data, and other cart item data.
 		                 $cart_id = WC()->cart->generate_cart_id( $product_id, '', '', $cart_item_data );
 		                
@@ -949,6 +967,4 @@ class Api_Function {
 }
 
 new Api_Function();
-
-
 ?>
