@@ -12,6 +12,10 @@ class Api_Function {
 			{
               add_action( 'rest_api_init', array($this,'add_api_routes') );
               add_action( 'init', array($this,'on_activate_create_return_table') );
+              add_filter( 'rest_pre_echo_response', array($this,'sm_change_api_response'), 10, 3 );
+
+			  // add the filter 
+			 // add_filter( 'wpcf7_ajax_json_echo', array($this,'sm_filter_wpcf7_ajax_json_echo'), 10, 2 ); 
             }
 
 
@@ -255,18 +259,36 @@ class Api_Function {
 			
 			public function wc_rest_user_endpoint_login_handler($request){
 			    $creds = array();
+			    $response = array();
+			    $response['status'] = null;
+			    $response['status_code'] = null;
+			    $response['message'] = null;
+			    $response['api'] = 'ck_api';
+			    $response['results'] = null;
 			    $headers = getallheaders();
 			    $creds['user_login'] = $request["username"];
 			    $creds['user_password'] =  $request["password"];
 			    $creds['remember'] = true;
 			   // $user = wp_authenticate( $request["username"], $request["password"] );
 			    $user = wp_signon( $creds, true );
-			  
+			   // return $user;
+                  
+              
+			    if ( is_wp_error($user) ){
+			    	$response['status'] = 'faliure';
+			    	$response['status_code'] = 404;
+			    	$response['message'] = $user->get_error_message();
+			    	$response['results'] = $user;
+			    	return $response;
+			        //return $user->get_error_message();
+			    }
 
-			    if ( is_wp_error($user) )
-			      return $user->get_error_message();
+			      wp_set_current_user( $user->ID, $creds['user_login'] );
+			      //wp_set_auth_cookie($user->ID);
+			    $response['status'] = 'success';
+			    $response['status_code'] = 200;
+			    $response['message'] = 'login successfull';
 
-			    wp_set_current_user( $user->ID, $creds['user_login'] );
 
 			    $id = $user->ID;
 			    $meta = get_user_meta($id);
@@ -284,14 +306,16 @@ class Api_Function {
 				
 			    $data = array(
 
-			    	        'status' => 'ok',
+			    	        //'status' => 'ok',
 			    	        'authtoken' => $token,
 			    	        'token_data' => $token_data,
 							'user' => $userdata,
 				           
 				        );
 
-			    return $data;
+			    $response['results'] = $data;
+
+			    return $response;
 			}
 
 
@@ -301,6 +325,12 @@ class Api_Function {
 			public function wc_rest_user_endpoint_register_handler($request = null) {
 				      $parameters = $request->get_json_params();
 					  $response = array();
+
+					  $response['status'] = null;
+					  $response['status_code'] = null;
+					  $response['message'] = null;
+					  $response['api'] = 'ck_api';
+					  $response['results'] = null;
 					  $first_name = sanitize_text_field($parameters['first_name']);
 					  $last_name = sanitize_text_field($parameters['last_name']);
 					  $username = sanitize_text_field($parameters['username']);
@@ -324,15 +354,28 @@ class Api_Function {
 					  $error = new WP_Error();
 					  if (empty($username)) {
 					    $error->add(400, __("Username field 'username' is required.", 'wp-rest-user'), array('status' => 400));
-					    return $error;
+					    $response['status'] = 'faliure';
+			    	    $response['status_code'] = 400;
+			    	    $response['message'] = "Username field 'username' is required.";
+			    	    
+			    	    return $response;
+					    
 					  }
 					  if (empty($email)) {
 					    $error->add(401, __("Email field 'email' is required.", 'wp-rest-user'), array('status' => 400));
-					    return $error;
+					     $response['status'] = 'faliure';
+			    	     $response['status_code'] = 400;
+			    	     $response['message'] = "Email field 'email' is required.";
+			    	    
+			    	     return $response;
 					  }
 					  if (empty($password)) {
-					    $error->add(404, __("Password field 'password' is required.", 'wp-rest-user'), array('status' => 400));
-					    return $error;
+					     $error->add(404, __("Password field 'password' is required.", 'wp-rest-user'), array('status' => 400));
+					     $response['status'] = 'faliure';
+			    	     $response['status_code'] = 400;
+			    	     $response['message'] = "Password field 'password' is required.";
+			    	   
+			    	     return $response;
 					  }
 					 
 					  $user_id = username_exists($username);
@@ -363,8 +406,13 @@ class Api_Function {
 						  $user_login = wp_signon( $creds, true );
 
 
-						   if ( is_wp_error($user_login) )
-						      return $user_login->get_error_message();
+						   if ( is_wp_error($user_login) ){
+						      $response['status'] = 'faliure';
+					    	  $response['status_code'] = 404;
+					    	  $response['message'] = $user_login->get_error_message();
+					    	  $response['results'] = $user_login;
+					    	  return $response;
+						   }
                
 						   $sessions = get_user_meta( $user_login->ID, 'session_tokens', true );
 							foreach ($sessions as $key => $value) {
@@ -377,7 +425,7 @@ class Api_Function {
 				
 						    $data = array(
 
-						    	        'status' => 'ok',
+						    	       // 'status' => 'ok',
 						    	        'authtoken' => $token,
 						    	        'token_data' => $token_data,
 										'user' => $userdata,
@@ -386,13 +434,27 @@ class Api_Function {
 					      
 					      //$response['code'] = 200;
 					      //$response['message'] = __("User '" . $username . "' Registration was Successful", "wp-rest-user");
-					       $response = $data;
+						     $response['status'] = 'success';
+			                 $response['status_code'] = 200;
+			                 $response['message'] = 'Registration was Successful';
+
+					       
+					         $response['results'] = $data;
 					    } else {
-					      return $user_id;
+					      //return $user_id;
+					          $response['status'] = 'faliure';
+					    	  $response['status_code'] = 404;
+					    	  $response['message'] = "Registration is not Successful";
+					    	  $response['results'] = $user_id;
+					    	  return $response;
 					    }
 					  } else {
 					    $error->add(406, __("Email already exists, please try 'Reset Password'", 'wp-rest-user'), array('status' => 400));
-					    return $error;
+					          $response['status'] = 'faliure';
+					    	  $response['status_code'] = 406;
+					    	  $response['message'] = "Email already exists, please try 'Reset Password'";
+					    	  
+					    	  return $response;
 					  }
 					  return new WP_REST_Response($response, 123);
             }
@@ -401,22 +463,34 @@ class Api_Function {
    
 
 			public function wc_rest_user_endpoint_lost_password_handler($request = null){
-				          global $wpdb;
-							$response = array();
+				     global $wpdb;
+					$response = array();
+					$response['status'] = null;
+					$response['status_code'] = null;
+					$response['message'] = null;
+					$response['api'] = 'ck_api';
+					$response['results'] = null;
 					$parameters = $request->get_json_params();
 					$user_login = sanitize_text_field($parameters['user_login']);
 					$error = new WP_Error();
 
 					if (empty($user_login)) {
-						$error->add(400, __("The field 'user_login' is required.", 'wp-rest-user'), array('status' => 400));
-						return $error;
+						//$error->add(400, __("The field 'user_login' is required.", 'wp-rest-user'), array('status' => 400));
+						$response['status'] = 'faliure';
+			    	    $response['status_code'] = 400;
+			    	    $response['message'] = "The field 'user_login' is required.";
+
+						return $response;
 					} else {
 						$user_id = username_exists($user_login);
 						if ($user_id == false) {
 							$user_id = email_exists($user_login);
 							if ($user_id == false) {
-								$error->add(401, __("User '" . $user_login . "' not found.", 'wp-rest-user'), array('status' => 401));
-								return $error;
+								//$error->add(401, __("User '" . $user_login . "' not found.", 'wp-rest-user'), array('status' => 401));
+								$response['status'] = 'faliure';
+			    	            $response['status_code'] = 404;
+			    	            $response['message'] = $user_login . " is not found.";
+								return $response;
 							}
 						}
 					}
@@ -457,11 +531,18 @@ class Api_Function {
 					// ==============================================================
 
 					if ($email_successful) {
-						$response['code'] = 200;
-						$response['message'] = __("Otp had been send to your email.", "wp-rest-user");
+						  //$response['code'] = 200;
+						
+						 $response['status'] = 'success';
+			             $response['status_code'] = 200;
+			             $response['message'] = "Otp had been send to your email.";
+			             $response['results'] = $email_successful;
 					} else {
-						$error->add(402, __("Failed to send Reset Password email. Check your WordPress Hosting Email Settings.", 'wp-rest-user'), array('status' => 402));
-						return $error;
+						//$error->add(402, __("Failed to send Reset Password email. Check your WordPress Hosting Email Settings.", 'wp-rest-user'), array('status' => 402));
+						$response['status'] = 'faliure';
+			    	    $response['status_code'] = 402;
+			    	    $response['message'] = "Failed to send Reset Password email. Check Hosting Email Settings.";
+						return $response;
 					}
 
 					return new WP_REST_Response($response, 200);
@@ -475,10 +556,17 @@ class Api_Function {
 				        global $wpdb;
 				        $table_name = $wpdb->prefix . 'otp_expiry';
 					    $response = array();
+					    $response['status'] = null;
+					    $response['status_code'] = null;
+					    $response['message'] = null;
+					    $response['api'] = 'ck_api';
+					    $response['results'] = null;
 					    $parameters = $request->get_json_params();
 					    $otp = $parameters["otp"];
 					    
 						   if (empty($otp)) {
+						   	$response['status'] = 'faliure';
+			    	        $response['status_code'] = 402;
 						    $response['message'] = "otp field 'otp' is required.";
 						    return $response;
 						  }
@@ -499,16 +587,28 @@ class Api_Function {
 									
 									 $wpdb->update($table_name, array('is_expired'=> '1'), array('otp' => $result[0]->otp));
 
-									 $response['otpId'] = $result[0]->id;
-                                     $response['message'] = "OTP is verified.";
+									 $data['otpId'] = $result[0]->id;
+                                     
+                                     $response['status'] = 'success';
+			                         $response['status_code'] = 200;
+			                         $response['message'] = "OTP is verified.";
+			                         $response['results'] = $data;
 								}else{
 
-                                     $response['message'] = "OTP is expired.";								}
+                                    
+                                     $response['status'] = 'faliure';
+				    	             $response['status_code'] = 300;
+							         $response['message'] = "OTP is expired.";
+							         return $response;								}
 								
 								
 							} else {
 								
-								$response['message'] = "Invalid OTP!";
+									
+								$response['status'] = 'faliure';
+				    	        $response['status_code'] = 404;
+							    $response['message'] = "Invalid OTP!";
+							    return $response;
 							}	
 						}
 
@@ -523,17 +623,26 @@ class Api_Function {
 				        global $wpdb;
 				        $table_name = $wpdb->prefix . 'otp_expiry';
 					    $response = array();
+					    $response['status'] = null;
+					    $response['status_code'] = null;
+					    $response['message'] = null;
+					    $response['api'] = 'ck_api';
+					    $response['results'] = null;
 					    $parameters = $request->get_json_params();
 					    
 					    $otpId = $parameters["otpId"];
 					    $password = $parameters["password"];
 					      if (empty($otpId)) {
+					      	$response['status'] = 'faliure';
+				    	    $response['status_code'] = 404;
 						    $response['message'] = "otpId field 'otpId' is required.";
 						    return $response;
 						  }
 
 						   
 						  if (empty($password)) {
+						  	$response['status'] = 'faliure';
+				    	    $response['status_code'] = 404;
 						    $response['message'] = "password field 'password' is required.";
 						    return $response;
 						  }
@@ -552,20 +661,31 @@ class Api_Function {
 								if ($result[0]->is_expired==1 && $result[0]->is_expired!=2 && $result[0]->is_expired!=0 && date("Y-m-d H:i:s") <= $expriydate) {
 									$user_id =	$result[0]->user_id;
 									
-									wp_set_password( $password, $user_id );
+									$data = wp_set_password( $password, $user_id );
 									$wpdb->update($table_name, array('is_expired'=> '2'), array('id' => $otpId));
 
-                                     $response['message'] = "Password change Successful";
+
+									 $response['status'] = 'success';
+			                         $response['status_code'] = 200;
+			                         $response['message'] = "Password change Successful";
+			                         $response['results'] = $data;
+
+                                     
 
 								}else{
-
-                                    $response['message'] = "OTP is expired try again.";								
+									$response['status'] = 'faliure';
+				    	            $response['status_code'] = 300;
+                                    $response['message'] = "OTP is expired try again.";
+                                    return $response;
+							
                                 }
 								
 								
 							} else {
-								
+								$response['status'] = 'faliure';
+				    	        $response['status_code'] = 404;
 								$response['message'] = "Invalid OTP!";
+								return $response;
 							}	
 						
 
@@ -577,25 +697,49 @@ class Api_Function {
 
 
 			public function wc_rest_user_endpoint_pricing_handler(){
+
+				        $response = array();
+					    $response['status'] = null;
+					    $response['status_code'] = null;
+					    $response['message'] = null;
+					    $response['api'] = 'ck_api';
+					    $response['results'] = null;
 				
-				$page_id = 69;
-				$pricing_data = array();
-				if( have_rows('pricing_app', $page_id) ): 
-				while( have_rows('pricing_app', $page_id) ): the_row(); 
-					      $title = '';
-					      $content = '';
-				         $title = get_sub_field('pricing_title'); 
-				         $content = get_sub_field('pricing_content'); 
-				         $pricing_data[] = array('title' => $title, 'content' => $content);
+						$page_id = 69;
+						$pricing_data = array();
+						if( have_rows('pricing_app', $page_id) ): 
+						while( have_rows('pricing_app', $page_id) ): the_row(); 
+							      $title = '';
+							      $content = '';
+						         $title = get_sub_field('pricing_title'); 
+						         $content = get_sub_field('pricing_content'); 
+						         $pricing_data[] = array('title' => $title, 'content' => $content);
 
-				endwhile; 
-				endif; 
-
-				return $pricing_data;
+						endwhile; 
+						endif; 
+		                if (!empty($pricing_data)) {
+		                	 $response['status'] = 'success';
+					         $response['status_code'] = 200;
+					         $response['message'] = "get pricing data Successful";
+					         $response['results'] = $pricing_data;
+		                }else{
+		                	 $response['status'] = 'faliure';
+						     $response['status_code'] = 404;
+							 $response['message'] = "Pricing data Not Found";
+		                }
+						return $response;
 			}
 
 
 			public function wc_rest_user_endpoint_help_handler(){
+
+
+			        $response = array();
+				    $response['status'] = null;
+				    $response['status_code'] = null;
+				    $response['message'] = null;
+				     $response['api'] = 'ck_api';
+				    $response['results'] = null;
 
 				    $page_id = 71;
 				    $help_data = array();
@@ -612,7 +756,18 @@ class Api_Function {
 
 					endif; 
 
-					return $help_data;
+					
+					if (!empty($help_data)) {
+		                	 $response['status'] = 'success';
+					         $response['status_code'] = 200;
+					         $response['message'] = "get help data Successful";
+					         $response['results'] = $help_data;
+		            }else{
+		                	 $response['status'] = 'faliure';
+						     $response['status_code'] = 404;
+							 $response['message'] = "Help data Not Found";
+		            }
+					return $response;
 
 
 			}
@@ -621,7 +776,18 @@ class Api_Function {
 
 			public function wc_rest_user_endpoint_faq_general_handler($request){
 				     $response = array();
-				     $page_id = $request['id'];
+				    $response['status'] = null;
+				    $response['status_code'] = null;
+				    $response['message'] = null;
+				     $response['api'] = 'ck_api';
+				    $response['results'] = null;
+				    $page_id = $request['id'];
+				    if (empty($page_id)) {
+					      	$response['status'] = 'faliure';
+				    	    $response['status_code'] = 404;
+						    $response['message'] = "id parameter 'id' is required.";
+						    return $response;
+					}
 
 					$faq_data = array();
 					if( have_rows('faq_item', $page_id) ){
@@ -633,8 +799,13 @@ class Api_Function {
 					         $faq_data[] = array('title' => $title, 'content' => $content);
 
 					endwhile; 
-					 $response['data'] = $faq_data;
+					 $response['status'] = 'success';
+					 $response['status_code'] = 200;
+					 $response['message'] = "Get FAQ data Successful";
+					 $response['results'] = $faq_data;
 					}else{
+					 $response['status'] = 'faliure';
+				     $response['status_code'] = 404;
                      $response['message'] = "FAQ not found ";
 					}
 
@@ -643,8 +814,19 @@ class Api_Function {
 			}
 			
 			public function wc_rest_user_endpoint_faq_country_handler($request){
-				     $response = array();
-				     $page_id = $request['id'];
+				    $response = array();
+				    $response['status'] = null;
+				    $response['status_code'] = null;
+				    $response['message'] = null;
+				     $response['api'] = 'ck_api';
+				    $response['results'] = null;
+				    $page_id = $request['id'];
+				      if (empty($page_id)) {
+					      	$response['status'] = 'faliure';
+				    	    $response['status_code'] = 404;
+						    $response['message'] = "id parameter 'id' is required.";
+						    return $response;
+					}
 
 					$faq_data = array();
 					if( have_rows('faq_item', $page_id) ){
@@ -656,8 +838,13 @@ class Api_Function {
 					         $faq_data[] = array('title' => $title, 'content' => $content);
 
 					endwhile; 
-					 $response['data'] = $faq_data;
+					 $response['status'] = 'success';
+					 $response['status_code'] = 200;
+					 $response['message'] = "Get FAQ data Successful";
+					 $response['results'] = $faq_data;
 					}else{
+                     $response['status'] = 'faliure';
+				     $response['status_code'] = 404;
                      $response['message'] = "FAQ not found ";
 					}
 
@@ -668,13 +855,23 @@ class Api_Function {
 			public function wc_rest_user_endpoint_privacy_policy_handler(){
                     $page_id = 192;
                     $response = array();
+				    $response['status'] = null;
+				    $response['status_code'] = null;
+				    $response['message'] = null;
+				     $response['api'] = 'ck_api';
+				    $response['results'] = null;
 					$post = get_post($page_id);
 					if (!empty($post)) {
 					  $content = $post->post_content;
-					  $response['data'] = $content;
+					 $response['status'] = 'success';
+					 $response['status_code'] = 200;
+					 $response['message'] = "Get privacy policy data Successful";
+					 $response['results'] = $content;
 						
 					}else{
-                       $response['message'] = "Not found ";
+					   $response['status'] = 'faliure';
+				       $response['status_code'] = 404;
+                       $response['message'] = "Privacy policy data not found ";
 					}
 					
 
@@ -705,24 +902,37 @@ class Api_Function {
 
 			public function wc_rest_user_endpoint_logout_handler($request = null){
 				        $response = array();
+				        $response['status'] = null;
+				        $response['status_code'] = null;
+				        $response['message'] = null;
+				         $response['api'] = 'ck_api';
+				        $response['results'] = null;
 					    $parameters = $request->get_json_params();
 					    $user_id = $parameters["user_id"];
 					    $token = $parameters["token"];
 					     if (empty($user_id)) {
+					        $response['status'] = 'faliure';
+				            $response['status_code'] = 404;
 						    $response['message'] = "user_id field 'user_id' is required.";
 						    return $response;
 						  }
 
 						   
 						  if (empty($token)) {
+						  	$response['status'] = 'faliure';
+				            $response['status_code'] = 404;
 						    $response['message'] = "token field 'token' is required.";
 						    return $response;
 						  }
 
                        
                         if ($this->wc_user_destroy_session($token, $user_id)) {
+                        	$response['status'] = 'success';
+					        $response['status_code'] = 200;
                         	$response['message'] = "User id ".$user_id." Logout Successful.";
                         }else{
+                        	$response['status'] = 'faliure';
+				            $response['status_code'] = 500;
                         	$response['message'] = "error";
                         }
 
@@ -736,6 +946,11 @@ class Api_Function {
 			public function get_cart_customer( $data = array(), $cart_item_key = '' ) {
 
                         $response = array();
+                        $response['status'] = null;
+				        $response['status_code'] = null;
+				        $response['message'] = null;
+				         $response['api'] = 'ck_api';
+				        $response['results'] = null;
 					    $headers = getallheaders();
 					    $verifier = $headers['authtoken'];
 					    $user_id = $headers['user_id'];
@@ -743,19 +958,28 @@ class Api_Function {
 							return new WP_Error( 'ck_customer_missing', 'Customer ID is required!', array( 'status' => 500 ) );
 						  }
 					      if (empty($user_id)) {
+					      	$response['status'] = 'faliure';
+				            $response['status_code'] = 404;
 						    $response['message'] = "user_id field 'user_id' is required.";
 						    return $response;
 						  }
 
 						  if (empty($verifier)) {
+						  	$response['status'] = 'faliure';
+				            $response['status_code'] = 404;
 						    $response['message'] = "token field 'token' is required.";
 						    return $response;
 						  }
                            if($this->chek_user_login($user_id, $verifier)){
                                $saved_cart = $this->get_saved_cart( $data );
-                               $response['data'] = $saved_cart;
+                               $response['status'] = 'success';
+					           $response['status_code'] = 200;
+					            $response['message'] = "get cart data Successful";
+                               $response['results'] = $saved_cart;
                            }else{
-                              $response['message'] = "cart not found";
+                           	  $response['status'] = 'faliure';
+				              $response['status_code'] = 100;
+                              $response['message'] = "authentication error";
 
                            }
 
@@ -808,29 +1032,44 @@ class Api_Function {
 
 			public function wc_rest_add_to_cart_handler($data = array() ){
 				        $response = array();
+				        $response['status'] = null;
+				        $response['status_code'] = null;
+				        $response['message'] = null;
+				         $response['api'] = 'ck_api';
+				        $response['results'] = null;
 					    global $woocommerce,$wpdb;
 					    $headers = getallheaders();
 
 					    $verifier = $headers['authtoken'];
 					    $user_id = $headers['user_id'];
 					      if (empty($user_id)) {
+					      	$response['status'] = 'faliure';
+				            $response['status_code'] = 404;
 						    $response['message'] = "user_id field 'user_id' is required.";
 						    return $response;
 						  }
 
 						  if (empty($verifier)) {
+						  	$response['status'] = 'faliure';
+				            $response['status_code'] = 404;
 						    $response['message'] = "token field 'token' is required.";
 						    return $response;
 						  }
 						  if (empty($data['product_id'])) {
+						  	$response['status'] = 'faliure';
+				            $response['status_code'] = 404;
 						    $response['message'] = "product_id field 'product_id' is required.";
 						    return $response;
 						  }
 						  if (empty($data['cart_item_data'])) {
+						  	$response['status'] = 'faliure';
+				            $response['status_code'] = 404;
 						    $response['message'] = "cart_item_data field 'cart_item_data' is required.";
 						    return $response;
 						  }
 						  if (empty($data['quantity'])) {
+						  	$response['status'] = 'faliure';
+				            $response['status_code'] = 404;
 						    $response['message'] = "quantity field 'quantity' is required.";
 						    return $response;
 						  }
@@ -838,35 +1077,35 @@ class Api_Function {
 					    $product_id     = $data['product_id'];
 						$quantity       = $data['quantity'];
 						$cart_item_data = $data['cart_item_data'];
-						
-                                 $_FILES['image']['name'] = $data['image'];
-						if( !empty($_FILES['image']['name'])) {
-						      $upload = wp_upload_bits( $_FILES['image']['name'], null, file_get_contents( $_FILES['image']['tmp_name'] ) );
+						if (!empty($data['image'])) {
+	                           $_FILES['image']['name'] = $data['image'];
+							if( !empty($_FILES['image']['name'])) {
+							      $upload = wp_upload_bits( $_FILES['image']['name'], null, file_get_contents( $_FILES['image']['tmp_name'] ) );
 
-						      $filetype = wp_check_filetype( basename( $upload['file'] ), null );
+							      $filetype = wp_check_filetype( basename( $upload['file'] ), null );
 
-						      $upload_dir = wp_upload_dir();
+							      $upload_dir = wp_upload_dir();
 
-						      $upl_base_url = is_ssl() ? str_replace('http://', 'https://', $upload_dir['baseurl']) : $upload_dir['baseurl'];
+							      $upl_base_url = is_ssl() ? str_replace('http://', 'https://', $upload_dir['baseurl']) : $upload_dir['baseurl'];
 
-						      $base_name = basename( $upload['file'] );
+							      $base_name = basename( $upload['file'] );
 
-						      $cart_item_data['custom_file'] = array(
-						          'guid'      => $upl_base_url .'/'. _wp_relative_upload_path( $upload['file'] ),
-						          'file_type' => $filetype['type'],
-						          'file_name' => $base_name,
-						          'title'     => preg_replace('/\.[^.]+$/', '', $base_name ),
-						          'side'      => '',
-						          'key'       => md5( microtime().rand() ),
-						      );
-						}
-				
+							      $cart_item_data['custom_file'] = array(
+							          'guid'      => $upl_base_url .'/'. _wp_relative_upload_path( $upload['file'] ),
+							          'file_type' => $filetype['type'],
+							          'file_name' => $base_name,
+							          'title'     => preg_replace('/\.[^.]+$/', '', $base_name ),
+							          'side'      => '',
+							          'key'       => md5( microtime().rand() ),
+							      );
+							}
+					      }
 
 		                $item_added = array();
 
 		                 // Generate a ID based on product ID, variation ID, variation data, and other cart item data.
-		                 $cart_id = WC()->cart->generate_cart_id( $product_id, '', '', $cart_item_data );
-		                
+		                // $cart_id = WC()->cart->generate_cart_id( $product_id, '', '', $cart_item_data );
+		                     
 		                    
 			                if($this->chek_user_login($user_id, $verifier)){ // only update if session is not expired 
                                 wp_set_auth_cookie($headers['user_id']);
@@ -875,12 +1114,26 @@ class Api_Function {
 			                	
 								 // Return response to added item to cart or return error.
 								if ( $item_key ) {
-									$response['data'] = WC()->cart->get_cart();
+									 $response['status'] = 'success';
+					                 $response['status_code'] = 200;
+									 $response['message'] = "Product added cart Successful";
+									 $response['results'] = WC()->cart->get_cart();
 								} else {
 									/* translators: %s: product name */
-									return new WP_Error( 'ck_cannot_add_to_cart',  'You cannot add  to your cart is already in your cart.', array( 'status' => 500 ) );
+									//return new WP_Error( 'ck_cannot_add_to_cart',  'You cannot add  to your cart is already in your cart.', array( 'status' => 500 ) );
+										$response['status'] = 'faliure';
+				                        $response['status_code'] = 500;
+						                $response['message'] = "You cannot add  to your cart";
+						                 $response['results'] = new WP_Error( 'ck_cannot_add_to_cart',  'You cannot add  to your cart is already in your cart.', array( 'status' => 500 ) );
+						                
+
 								}
 			              
+							}else{
+                                $response['status'] = 'faliure';
+				                $response['status_code'] = 100;
+						        $response['message'] = "authentication error";
+
 							}
 
 					      return$response;
@@ -892,13 +1145,20 @@ class Api_Function {
 
 
 			public function wc_rest_crt_item_remove_handler($request = null){
-				       $response = array();
+				        $response = array();
+				        $response['status'] = null;
+				        $response['status_code'] = null;
+				        $response['message'] = null;
+				         $response['api'] = 'ck_api';
+				        $response['results'] = null;
 					   $parameters = $request->get_json_params();
 
 					   $cart_item_key = $parameters['cart_item_key'];
 					   $headers = getallheaders();
 
 					   if (empty($cart_item_key)) {
+					   	$response['status'] = 'faliure';
+				            $response['status_code'] = 404;
 						    $response['message'] = "cart_item_key field 'cart_item_key' is required.";
 						    return $response;
 						  }
@@ -906,11 +1166,15 @@ class Api_Function {
 					     $user_id = $headers['user_id'];
 						
 					      if (empty($user_id)) {
+					      	$response['status'] = 'faliure';
+				            $response['status_code'] = 404;
 						    $response['message'] = "user_id field 'user_id' is required.";
 						    return $response;
 						  }
 
 						  if (empty($verifier)) {
+						  	$response['status'] = 'faliure';
+				            $response['status_code'] = 404;
 						    $response['message'] = "token field 'token' is required.";
 						    return $response;
 						  }
@@ -918,7 +1182,11 @@ class Api_Function {
 						   if($this->chek_user_login($user_id, $verifier)){
                               // Checks to see if the cart is empty before attempting to remove item.
 							if ( WC()->cart->is_empty() ) {
-								return new WP_Error( 'ckcart_no_items', 'No items in cart.', array( 'status' => 500 ) );
+								 $response['status'] = 'faliure';
+				                 $response['status_code'] = 500;
+						         $response['message'] = 'Item specified does not exist in cart.';
+								 //return new WP_Error( 'ckcart_no_items', 'No items in cart.', array( 'status' => 500 ) );
+								return $response;
 							}
 
 							if ( $cart_item_key != '0' ) {
@@ -926,18 +1194,34 @@ class Api_Function {
 		                    	$current_data = WC()->cart->get_cart_item( $cart_item_key );
 		                    	// If item does not exist in cart return response.
 								if ( empty( $current_data ) ) {
-									return new WP_Error( 'ckcart_item_not_in_cart', 'Item specified does not exist in cart.', array( 'status' => 404 ) );
+									 $response['status'] = 'faliure';
+				                     $response['status_code'] = 400;
+						             $response['message'] = 'Item specified does not exist in cart.';
+									//return new WP_Error( 'ckcart_item_not_in_cart', 'Item specified does not exist in cart.', array( 'status' => 404 ) );
+									return $response;
 								}
 
 								if ( WC()->cart->remove_cart_item( $cart_item_key ) ) {
-										return new WP_REST_Response(  'Item has been removed from cart.', 200 );
+									 $response['status'] = 'success';
+					                 $response['status_code'] = 200;
+									 $response['message'] = 'Item has been removed from cart.';
+									   $response['results'] = $cart_item_key;
+										//return new WP_REST_Response(  'Item has been removed from cart.', 200 );
 									} else {
-										return new WP_Error( 'ckcart_can_not_remove_item', 'Unable to remove item from cart.', array( 'status' => 500 ) );
+										 $response['status'] = 'faliure';
+				                         $response['status_code'] = 100;
+						                 $response['message'] = 'Unable to remove item from cart.';
+										//return new WP_Error( 'ckcart_can_not_remove_item', 'Unable to remove item from cart.', array( 'status' => 500 ) );
 									}
 
 							}  
                            }else{
-                              $response['message'] = "cart not found";
+                             
+                                $response['status'] = 'faliure';
+				                $response['status_code'] = 100;
+						        $response['message'] = "authentication error";
+
+							
 
                            }
 
@@ -953,6 +1237,11 @@ class Api_Function {
 
 			public function wc_rest_statstics_handler($request){
 				     $response = array();
+				     $response['status'] = null;
+				     $response['status_code'] = null;
+				     $response['message'] = null;
+				      $response['api'] = 'ck_api';
+				     $response['results'] = null;
 				     $page_id = 1106;
 				     $statstics_users = get_post_meta( $page_id, 'statstics_users', true );
 				     $statstics_countries = get_post_meta( $page_id, 'statstics_countries', true );
@@ -960,9 +1249,62 @@ class Api_Function {
 				     $statstics_data = array();
 
 				     $statstics_data['statstics'] = array('users' => $statstics_users, 'countries' => $statstics_countries , 'currencies' => $statstics_currencies);
-                    return $statstics_data;
+
+				     if ($statstics_users) {
+				     	$response['status'] = 'success';
+					    $response['status_code'] = 200;
+                        $response['message'] = "Get statstics data Successful.";
+                        $response['results'] = $statstics_data;
+				     }else{
+                        $response['status'] = 'faliure';
+				        $response['status_code'] = 404;
+                        $response['message'] = "Statstics data not found ";
+				     }
+                    return $response;
 
 			}
+
+
+			public function sm_filter_wpcf7_ajax_json_echo( $response, $result) { 
+	
+				if ($response['status']=='mail_sent') {
+				   $response['status'] = 'success';
+				   $response['status_code'] = 200;
+				}else{
+			      $response['status'] = 'faliure';
+				  $response['status_code'] = 404;
+				}
+				// $response['results'] = null;
+				// unset($response['into']); 
+			     return $response; 
+			}
+
+
+			
+				public function sm_change_api_response( $response, $object, $request ) {
+
+				                $nresponse = array();
+
+					       
+							  if ($response['code'] || $response['status'] == 'validation_failed') {
+								    $nresponse['status'] = 'faliure';
+								    $nresponse['status_code'] = $response['data']['status'];
+								    $nresponse['message'] = $response['message'];
+								    $nresponse['results'] = $response;
+				                    return $nresponse;
+
+							  }else if ($response['api'] != 'ck_api' || $response['status'] == 'mail_sent'){
+				                         $nresponse['status'] = 'success';
+				 				         $nresponse['status_code'] = 200;
+							             $nresponse['message'] = "Data Successful.";
+								         $nresponse['results'] = $response;
+								         return $nresponse;
+							  }
+
+					         return $response;
+
+				}
+
 
 }
 
