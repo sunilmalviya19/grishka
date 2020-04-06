@@ -1243,14 +1243,17 @@ class Api_Function {
 				      $response['api'] = 'ck_api';
 				     $response['results'] = null;
 				     $page_id = 1106;
+
 				     $statstics_users = get_post_meta( $page_id, 'statstics_users', true );
 				     $statstics_countries = get_post_meta( $page_id, 'statstics_countries', true );
 				     $statstics_currencies = get_post_meta( $page_id, 'statstics_currencies', true );
 				     $statstics_data = array();
+				     $result = count_users();
+				     $users_count = count( get_users( array( 'role' => 'customer' ) ) );
 
-				     $statstics_data['statstics'] = array('users' => $statstics_users, 'countries' => $statstics_countries , 'currencies' => $statstics_currencies);
+				     $statstics_data['statstics'] = array('users' => $users_count, 'countries' => $statstics_countries , 'currencies' => $statstics_currencies);
 
-				     if ($statstics_users) {
+				     if ($users_count) {
 				     	$response['status'] = 'success';
 					    $response['status_code'] = 200;
                         $response['message'] = "Get statstics data Successful.";
