@@ -1,9 +1,9 @@
 <?php
+  //  if ( ! defined( 'ABSPATH' ) ) {
+	 // exit; // Exit if accessed directly
+  //  }
 
-   if ( ! defined( 'ABSPATH' ) ) {
-	 exit; // Exit if accessed directly
-   }
-
+use Automattic\WooCommerce\Client;
 class Api_Function {
 
 
@@ -15,7 +15,12 @@ class Api_Function {
               add_filter( 'rest_pre_echo_response', array($this,'sm_change_api_response'), 10, 3 );
 
 			  // add the filter 
-			 // add_filter( 'wpcf7_ajax_json_echo', array($this,'sm_filter_wpcf7_ajax_json_echo'), 10, 2 ); 
+			 //add_filter( 'wpcf7_ajax_json_echo', array($this,'sm_filter_wpcf7_ajax_json_echo'), 10, 2 ); 
+
+             
+
+           
+
             }
 
 
@@ -169,7 +174,7 @@ class Api_Function {
 					   * Handle Add to Basket content request.
 					   */
 					  register_rest_route('ck', '/cart/add-item', array(
-					    'methods' => 'POST',
+					    'methods' => WP_REST_Server::CREATABLE,
 					    'callback' => array($this,'wc_rest_add_to_cart_handler'),
 					    'args'     => array(
 						'product_id' => array(
@@ -235,6 +240,16 @@ class Api_Function {
 					  ));
 
 
+
+					   /**
+					   * Handle pay request.
+					   */
+					  register_rest_route('ck', '/pay', array(
+					    'methods' => 'POST',
+					    'callback' => array($this,'wc_rest_orer_endpoint_handler'),
+					  ));
+
+
 			}
 
             public function get_user_info_arry($user_id){
@@ -269,9 +284,10 @@ class Api_Function {
 			    $creds['user_login'] = $request["username"];
 			    $creds['user_password'] =  $request["password"];
 			    $creds['remember'] = true;
-			   // $user = wp_authenticate( $request["username"], $request["password"] );
+			    
+			    
 			    $user = wp_signon( $creds, true );
-			   // return $user;
+			   // return $headers;
                   
               
 			    if ( is_wp_error($user) ){
@@ -283,7 +299,7 @@ class Api_Function {
 			        //return $user->get_error_message();
 			    }
 
-			      wp_set_current_user( $user->ID, $creds['user_login'] );
+			     // wp_set_current_user( $user->ID, $creds['user_login'] );
 			      //wp_set_auth_cookie($user->ID);
 			    $response['status'] = 'success';
 			    $response['status_code'] = 200;
@@ -927,6 +943,8 @@ class Api_Function {
 
                        
                         if ($this->wc_user_destroy_session($token, $user_id)) {
+                        	wp_clear_auth_cookie();
+                        	wp_destroy_current_session();
                         	$response['status'] = 'success';
 					        $response['status_code'] = 200;
                         	$response['message'] = "User id ".$user_id." Logout Successful.";
@@ -952,6 +970,7 @@ class Api_Function {
 				         $response['api'] = 'ck_api';
 				        $response['results'] = null;
 					    $headers = getallheaders();
+					   
 					    $verifier = $headers['authtoken'];
 					    $user_id = $headers['user_id'];
 						  if ( empty( $data['id'] ) ) {
@@ -975,7 +994,7 @@ class Api_Function {
                                $response['status'] = 'success';
 					           $response['status_code'] = 200;
 					            $response['message'] = "get cart data Successful";
-                               $response['results'] = $saved_cart;
+                               $response['results'][] = $saved_cart;
                            }else{
                            	  $response['status'] = 'faliure';
 				              $response['status_code'] = 100;
@@ -993,6 +1012,7 @@ class Api_Function {
 				$saved_cart = array();
 
 				$customer_id = ! empty( $data['id'] ) ? $data['id'] : 0;
+
 
 				if ( $customer_id > 0 ) {
 					$saved_cart_meta = get_user_meta( $customer_id, '_woocommerce_persistent_cart_' . get_current_blog_id(), true );
@@ -1031,6 +1051,7 @@ class Api_Function {
 			}
 
 			public function wc_rest_add_to_cart_handler($data = array() ){
+				     
 				        $response = array();
 				        $response['status'] = null;
 				        $response['status_code'] = null;
@@ -1055,10 +1076,17 @@ class Api_Function {
 						    $response['message'] = "token field 'token' is required.";
 						    return $response;
 						  }
-						  if (empty($data['product_id'])) {
+						  // if (empty($data['product_id'])) {
+						  // 	$response['status'] = 'faliure';
+				    //         $response['status_code'] = 404;
+						  //   $response['message'] = "product_id field 'product_id' is required.";
+						  //   return $response;
+						  // }
+
+						    if (empty($data['country_code'])) {
 						  	$response['status'] = 'faliure';
 				            $response['status_code'] = 404;
-						    $response['message'] = "product_id field 'product_id' is required.";
+						    $response['message'] = "country_code field 'country_code' is required.";
 						    return $response;
 						  }
 						  if (empty($data['cart_item_data'])) {
@@ -1067,15 +1095,22 @@ class Api_Function {
 						    $response['message'] = "cart_item_data field 'cart_item_data' is required.";
 						    return $response;
 						  }
-						  if (empty($data['quantity'])) {
-						  	$response['status'] = 'faliure';
-				            $response['status_code'] = 404;
-						    $response['message'] = "quantity field 'quantity' is required.";
-						    return $response;
-						  }
+
+						   $country_code = $data['country_code'];
+						   
+                           $check_product = $wpdb->get_results("SELECT * FROM $wpdb->postmeta
+                          WHERE meta_key = 'cart_transfer_country' AND  meta_value = '$country_code' LIMIT 1", ARRAY_A);
                           
-					    $product_id     = $data['product_id'];
-						$quantity       = $data['quantity'];
+                           if (!empty($check_product)) {
+                           	  $product_id  = $check_product[0]['post_id'];
+                           }else{
+                           	 	$response['status'] = 'faliure';
+				                $response['status_code'] = 404;
+						        $response['message'] = "country not found.";
+						        return $response;
+                           }
+
+						$quantity       = 1;
 						$cart_item_data = $data['cart_item_data'];
 						if (!empty($data['image'])) {
 	                           $_FILES['image']['name'] = $data['image'];
@@ -1108,8 +1143,11 @@ class Api_Function {
 		                     
 		                    
 			                if($this->chek_user_login($user_id, $verifier)){ // only update if session is not expired 
-                                wp_set_auth_cookie($headers['user_id']);
+
+                              // wp_set_auth_cookie($headers['user_id']);
+			                	//return WC()->cart->get_cart();
 			                	$item_key = WC()->cart->add_to_cart( $product_id, $quantity, '', '', $cart_item_data );
+			                	
 
 			                	
 								 // Return response to added item to cart or return error.
@@ -1117,7 +1155,7 @@ class Api_Function {
 									 $response['status'] = 'success';
 					                 $response['status_code'] = 200;
 									 $response['message'] = "Product added cart Successful";
-									 $response['results'] = WC()->cart->get_cart();
+									 $response['results'][] = WC()->cart->get_cart();
 								} else {
 									/* translators: %s: product name */
 									//return new WP_Error( 'ck_cannot_add_to_cart',  'You cannot add  to your cart is already in your cart.', array( 'status' => 500 ) );
@@ -1282,9 +1320,155 @@ class Api_Function {
 			     return $response; 
 			}
 
+        public function wc_rest_orer_endpoint_handler($request = null){
+				        $response = array();
+				        $response['status'] = null;
+				        $response['status_code'] = null;
+				        $response['message'] = null;
+				        $response['api'] = 'ck_api';
+				        $response['results'] = null;
+				        $woocommerce = '';
+                        $url = site_url();
+				       $store_consumer_key = 'ck_8af4d05d41fbae50b0eea61f2e4a48c5b683e581';
+				       $store_consumer_secret = 'cs_0d5e70969b0392291e2d3aa1d775a86b6e0d651c';
+				      $options = array(
+							'debug'           => false,
+							'return_as_array' => false,
+							'validate_url'    => false,
+							'timeout'         => 30,
+							'ssl_verify'      => false,
+							// 'version' => 'wc/v3',
+							
+		                );
+                       $woocommerce =  new Client( $url, $store_consumer_key, $store_consumer_secret, $options);
+					    $parameters = $request->get_json_params();
+					    $headers = getallheaders();
 
-			
-				public function sm_change_api_response( $response, $object, $request ) {
+					     $verifier = $headers['authtoken'];
+					     $user_id = $headers['user_id'];
+						
+					      if (empty($user_id)) {
+					      	$response['status'] = 'faliure';
+				            $response['status_code'] = 404;
+						    $response['message'] = "user_id field 'user_id' is required.";
+						    return $response;
+						  }
+
+						  if (empty($verifier)) {
+						  	$response['status'] = 'faliure';
+				            $response['status_code'] = 404;
+						    $response['message'] = "token field 'token' is required.";
+						    return $response;
+						  }
+
+						  if ( WC()->cart->is_empty() ) {
+								 $response['status'] = 'faliure';
+				                 $response['status_code'] = 500;
+						         $response['message'] = 'cart is empty.';
+								 //return new WP_Error( 'ckcart_no_items', 'No items in cart.', array( 'status' => 500 ) );
+								return $response;
+							}
+                           $line_items = array();
+						 foreach (WC()->cart->get_cart() as $cart_item_key => $values) {
+						 	    $meta_data = array();
+						 	    $tfs_open_price = '';
+						 	    $line_subtotal = '';
+						 	    $product_id = '';
+						 	    $line_total = '';
+                                  $product_id = $values['product_id'];
+						 	      $tfs_open_price = $values['tfs_open_price'];
+						 	     $line_subtotal = $values['line_subtotal'];
+						 	      $line_total = $values['line_total'];
+						 	   $meta_data[] = array(
+                                 "key" => "Delivery Method",
+                                 "value" => $values['tfs_delivery_method']
+						 	   );
+						 	   $meta_data[] = array(
+                                 "key" => "_FX Amount",
+                                 "value" => $values['tfs_fx_amount']
+						 	   );
+						 	    $meta_data[] = array(
+                                 "key" => "_Send Amount",
+                                 "value" => $values['tfs_open_price']
+						 	   );
+						 	     $meta_data[] = array(
+                                 "key" => "_FX Rate",
+                                 "value" => number_format($values['tfs_fx_rate'], 2, '.', '')
+						 	   );
+						 	      $meta_data[] = array(
+                                 "key" => "_Receive Currency",
+                                 "value" => $values['tfs_fx_receive_currency']
+						 	   );
+						 	       $meta_data[] = array(
+                                 "key" => "_Send Currency",
+                                 "value" => $values['tfs_fx_send_currency']
+						 	   );
+						 	         $meta_data[] = array(
+                                 "key" => "Exchange Summary",
+                                 "value" => $values['tfs_summary']
+						 	   );
+
+						 	    if (isset($values['custom_file'])) {
+						 	         	$filedata = '';
+
+						 	           $filedata = array(
+
+	                                 	'guid' => $values['custom_file']['guid'],
+	                                 	'file_type' => $values['custom_file']['file_type'],
+	                                 	'file_name' => $values['custom_file']['file_name'], 
+	                                 	'title' => $values['custom_file']['title'],
+	                                 	'side' => '',
+	                                 	'key' => $values['custom_file']['key'],
+
+	                                  );
+							 	      $meta_data[] = array(
+	                                 "key" => "_id_proof_file_data",
+	                                 "value" => $filedata
+							 	      );
+							 	     $meta_data[] = array(
+	                                 "key" => "ID Proof",
+	                                 "value" => $values['custom_file']['title']
+							 	      );
+
+						 	    }
+						 	         
+						 	    
+                               $line_items[] = array(
+                               	"product_id" => $product_id,
+                               	"quantity" => 1,
+                               	"price" => "$tfs_open_price",
+                               	"subtotal" => "$line_subtotal",
+                               	"total" => "$line_total", 
+                               	"meta_data" => $meta_data,
+
+                               );
+                         }
+
+                        $parameters['line_items'] = $line_items;
+                        $data = $woocommerce->post('orders', $parameters);
+                        //update_user_meta( 159, 'ob_meta', $data );
+                       // return $data;
+                        if ($data->results->id) {
+                        	WC()->cart->empty_cart();
+		                    WC()->session->set('cart', array());
+                        	   $response['status'] = 'success';
+				 			   $response['status_code'] = 200;
+							   $response['message'] = "Data Successful.";
+							   $response['results'] = $data->results;
+                        }else{
+                        	$response['status'] = 'faliure';
+				            $response['status_code'] = 500;
+						    $response['message'] = "order not created";
+						    
+                        }
+                         return $response;
+                        
+        }
+
+
+
+        public function sm_change_api_response( $response, $object, $request ) {
+					          //  return $response;
 
 				                $nresponse = array();
 
@@ -1307,9 +1491,8 @@ class Api_Function {
 					         return $response;
 
 				}
-
-
 }
 
 new Api_Function();
+
 ?>
