@@ -174,47 +174,8 @@ class Api_Function {
 					   * Handle Add to Basket content request.
 					   */
 					  register_rest_route('ck', '/cart/add-item', array(
-					    'methods' => WP_REST_Server::CREATABLE,
+					    'methods' => 'POST',
 					    'callback' => array($this,'wc_rest_add_to_cart_handler'),
-					    'args'     => array(
-						'product_id' => array(
-							'description'       => __( 'Unique identifier for the product ID.', 'cart-rest-api-for-woocommerce' ),
-							'type'              => 'integer',
-							'validate_callback' => function( $param, $request, $key ) {
-								return is_numeric( $param );
-							}
-						),
-						'quantity' => array(
-							'description'       => __( 'The quantity amount of the item to add to cart.', 'cart-rest-api-for-woocommerce' ),
-							'default'           => 1,
-							'type'              => 'integer',
-							'validate_callback' => function( $param, $request, $key ) {
-								return is_numeric( $param );
-							}
-						),
-						'variation_id' => array(
-							'description'       => __( 'Unique identifier for the variation ID.', 'cart-rest-api-for-woocommerce' ),
-							'type'              => 'integer',
-							'validate_callback' => function( $param, $request, $key ) {
-								return is_numeric( $param );
-							}
-						),
-						'variation' => array(
-							'validate_callback' => function( $param, $request, $key ) {
-								return is_array( $param );
-							}
-						),
-						'cart_item_data' => array(
-							'validate_callback' => function( $param, $request, $key ) {
-								return is_array( $param );
-							}
-						),
-						'refresh_totals' => array(
-							'description' => __( 'Re-calculates the totals once item has been added or the quantity of the item has increased.', 'cart-rest-api-for-woocommerce' ),
-							'default'     => false,
-							'type'        => 'boolean',
-						)
-					)
 					  ));
 
 
@@ -416,40 +377,38 @@ class Api_Function {
 					     update_user_meta( $user_id, 'billing_postcode', $postal_code );
 					     update_user_meta( $user_id, 'device_details', $device_details );
 					      $creds = array();
-						  $creds['user_login'] = $username;
-						  $creds['user_password'] =  $password;
-						  $creds['remember'] = true;
-						  $user_login = wp_signon( $creds, true );
+						 // $creds['user_login'] = $username;
+						 // $creds['user_password'] =  $password;
+						 // $creds['remember'] = true;
+						 // $user_login = wp_signon( $creds, true );
 
 
-						   if ( is_wp_error($user_login) ){
-						      $response['status'] = 'faliure';
-					    	  $response['status_code'] = 404;
-					    	  $response['message'] = $user_login->get_error_message();
-					    	  $response['results'] = $user_login;
-					    	  return $response;
-						   }
+						   // if ( is_wp_error($user_login) ){
+						   //    $response['status'] = 'faliure';
+					    // 	  $response['status_code'] = 404;
+					    // 	  $response['message'] = $user_login->get_error_message();
+					    // 	  $response['results'] = $user_login;
+					    // 	  return $response;
+						   // }
                
-						   $sessions = get_user_meta( $user_login->ID, 'session_tokens', true );
-							foreach ($sessions as $key => $value) {
-								 if(!next($sessions)) {
-								   $token = $key;
-						           $token_data = $value;
-						         }
+						 //   $sessions = get_user_meta( $user_login->ID, 'session_tokens', true );
+							// foreach ($sessions as $key => $value) {
+							// 	 if(!next($sessions)) {
+							// 	   $token = $key;
+						 //           $token_data = $value;
+						 //         }
 								
-							}
+							// }
 				
 						    $data = array(
 
 						    	       // 'status' => 'ok',
-						    	        'authtoken' => $token,
-						    	        'token_data' => $token_data,
+						    	       // 'authtoken' => $token,
+						    	       // 'token_data' => $token_data,
 										'user' => $userdata,
 							           
 							        );
 					      
-					      //$response['code'] = 200;
-					      //$response['message'] = __("User '" . $username . "' Registration was Successful", "wp-rest-user");
 						     $response['status'] = 'success';
 			                 $response['status_code'] = 200;
 			                 $response['message'] = 'Registration was Successful';
@@ -1050,9 +1009,12 @@ class Api_Function {
 
 			}
 
-			public function wc_rest_add_to_cart_handler($data = array() ){
+			public function wc_rest_add_to_cart_handler($data= array()){
 				     
 				        $response = array();
+				        $myParam = $data->get_param('cart_item_data');
+				         $_FILES = $data->get_file_params();
+				        //return $myParam;
 				        $response['status'] = null;
 				        $response['status_code'] = null;
 				        $response['message'] = null;
@@ -1076,14 +1038,8 @@ class Api_Function {
 						    $response['message'] = "token field 'token' is required.";
 						    return $response;
 						  }
-						  // if (empty($data['product_id'])) {
-						  // 	$response['status'] = 'faliure';
-				    //         $response['status_code'] = 404;
-						  //   $response['message'] = "product_id field 'product_id' is required.";
-						  //   return $response;
-						  // }
 
-						    if (empty($data['country_code'])) {
+						  if (empty($data['country_code'])) {
 						  	$response['status'] = 'faliure';
 				            $response['status_code'] = 404;
 						    $response['message'] = "country_code field 'country_code' is required.";
@@ -1112,9 +1068,31 @@ class Api_Function {
 
 						$quantity       = 1;
 						$cart_item_data = $data['cart_item_data'];
-						if (!empty($data['image'])) {
-	                           $_FILES['image']['name'] = $data['image'];
-							if( !empty($_FILES['image']['name'])) {
+							if( !empty($_FILES)) {
+
+                              $maxsize    = 5242880;
+						      $acceptable = array(
+						          'application/pdf',
+						          'image/jpeg',
+						          'image/jpg',
+						          'image/gif',
+						          'image/png'
+						      );
+
+				        if(($_FILES['image']['size'] >= $maxsize) || ($_FILES["image"]["size"] == 0)) {
+				                $response['status'] = 'faliure';
+				                $response['status_code'] = 502;
+						        $response['message'] = "File too large. File must be less than 5 megabytes.";
+						        return $response;
+				        }
+
+				       if((!in_array($_FILES['image']['type'], $acceptable)) && (!empty($_FILES["image"]["type"]))) {
+				                $response['status'] = 'faliure';
+				                $response['status_code'] = 502;
+						        $response['message'] = "Invalid file type. Only PDF, JPG, GIF and PNG types are accepted.";
+						        return $response;
+				        }
+
 							      $upload = wp_upload_bits( $_FILES['image']['name'], null, file_get_contents( $_FILES['image']['tmp_name'] ) );
 
 							      $filetype = wp_check_filetype( basename( $upload['file'] ), null );
@@ -1134,8 +1112,8 @@ class Api_Function {
 							          'key'       => md5( microtime().rand() ),
 							      );
 							}
-					      }
-
+					      
+                         //return $cart_item_data;
 		                $item_added = array();
 
 		                 // Generate a ID based on product ID, variation ID, variation data, and other cart item data.
