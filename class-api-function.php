@@ -10,10 +10,10 @@ class Api_Function {
 			public function __construct()
 
 			{
-              add_action( 'rest_api_init', array($this,'add_api_routes') );
-              add_action( 'init', array($this,'on_activate_create_return_table') );
-              add_filter( 'rest_pre_echo_response', array($this,'sm_change_api_response'), 10, 3 );
-
+                add_action( 'rest_api_init', array($this,'add_api_routes') );
+                add_action( 'init', array($this,'on_activate_create_return_table') );
+                add_filter( 'rest_pre_echo_response', array($this,'sm_change_api_response'), 10, 3 );
+             
 			  // add the filter 
 			 //add_filter( 'wpcf7_ajax_json_echo', array($this,'sm_filter_wpcf7_ajax_json_echo'), 10, 2 ); 
 
@@ -207,8 +207,49 @@ class Api_Function {
 					   */
 					  register_rest_route('ck', '/pay', array(
 					    'methods' => 'POST',
-					    'callback' => array($this,'wc_rest_orer_endpoint_handler'),
+					    'callback' => array($this,'wc_rest_order_pay_endpoint_handler'),
 					  ));
+
+
+					  // WooCommerce end points
+					   /**
+					   * Handle Countries request.
+					   */
+					  register_rest_route('ck', '/countries', array(
+					    'methods' => 'GET',
+					    'callback' => array($this,'wc_rest_countries_endpoint_handler'),
+					  ));
+
+					   /**
+					   * Handle payment_gateways request.
+					   */
+					  register_rest_route('ck', '/payment_gateways', array(
+					    'methods' => 'GET',
+					    'callback' => array($this,'wc_rest_payment_gateways_endpoint_handler'),
+					  ));
+
+
+					   /**
+					   * Handle orders request.
+					   */
+					  register_rest_route('ck', '/orders', array(
+					    'methods' => 'GET',
+					    'callback' => array($this,'wc_rest_order_history_endpoint_handler'),
+					  ));
+
+
+					  // Get Transaction History Detail
+						register_rest_route( 'ck', '/transaction/(?P<id>[\d]+)', array(
+							'methods'             => 'GET',
+							'callback'            => array( $this, 'wc_rest_transaction_history_detail_endpoint_handler' ),
+							'args'                => array(
+								'id' => array(
+									'required'    => true,
+									'description' => 'Unique identifier for the order.',
+									'type'        => 'integer',
+								),
+							),
+						) );
 
 
 			}
@@ -1298,27 +1339,36 @@ class Api_Function {
 			     return $response; 
 			}
 
-        public function wc_rest_orer_endpoint_handler($request = null){
-				        $response = array();
-				        $response['status'] = null;
-				        $response['status_code'] = null;
-				        $response['message'] = null;
-				        $response['api'] = 'ck_api';
-				        $response['results'] = null;
-				        $woocommerce = '';
+
+
+        public function get_api_client_object(){
+        	          $woocommerce = '';
                         $url = site_url();
 				       $store_consumer_key = 'ck_8af4d05d41fbae50b0eea61f2e4a48c5b683e581';
 				       $store_consumer_secret = 'cs_0d5e70969b0392291e2d3aa1d775a86b6e0d651c';
-				      $options = array(
-							'debug'           => false,
-							'return_as_array' => false,
+				       $options = array(
+							'debug'           => true,
+							'return_as_array' => true,
 							'validate_url'    => false,
 							'timeout'         => 30,
 							'ssl_verify'      => false,
 							// 'version' => 'wc/v3',
 							
 		                );
-                       $woocommerce =  new Client( $url, $store_consumer_key, $store_consumer_secret, $options);
+				   $woocommerce =  new Client( $url, $store_consumer_key, $store_consumer_secret, $options);
+				       return $woocommerce;
+
+
+        }
+        public function wc_rest_order_pay_endpoint_handler($request = null){
+				        $response = array();
+				        $response['status'] = null;
+				        $response['status_code'] = null;
+				        $response['message'] = null;
+				        $response['api'] = 'ck_api';
+				        $response['results'] = null;
+				        
+                        $woocommerce =  $this->get_api_client_object();
 					    $parameters = $request->get_json_params();
 					    $headers = getallheaders();
 
@@ -1446,7 +1496,7 @@ class Api_Function {
 
 
         public function sm_change_api_response( $response, $object, $request ) {
-					          //  return $response;
+					          // return $response;
 
 				                $nresponse = array();
 
@@ -1469,6 +1519,266 @@ class Api_Function {
 					         return $response;
 
 				}
+
+
+				public function wc_rest_countries_endpoint_handler(){
+
+					    $response = array();
+				        $response['status'] = null;
+				        $response['status_code'] = null;
+				        $response['message'] = null;
+				        $response['api'] = 'ck_api';
+				        $response['results'] = null;
+
+					    $countries_obj   = new WC_Countries();
+                        $countries   = $countries_obj->__get('countries');
+
+                        if (!empty($countries)) {
+                        	   $response['status'] = 'success';
+				 			   $response['status_code'] = 200;
+							   $response['message'] = "Countries Data Successful.";
+							   $response['results'] = $countries;
+                        }else{
+                        	$response['status'] = 'faliure';
+				            $response['status_code'] = 500;
+						    $response['message'] = "countries not found";
+						    
+                        }
+					    return $response;
+				}
+
+ 
+		public function wc_rest_payment_gateways_endpoint_handler(){
+			            $response = array();
+				        $response['status'] = null;
+				        $response['status_code'] = null;
+				        $response['message'] = null;
+				        $response['api'] = 'ck_api';
+				        $response['results'] = null;
+
+			   $woocommerce =  $this->get_api_client_object();
+
+			 $gateways = $woocommerce->get('payment_gateways');
+			       
+ 
+                    if (!empty($gateways->results)) {
+                        	   $response['status'] = 'success';
+				 			   $response['status_code'] = 200;
+							   $response['message'] = "payment gateways Data Successful.";
+							   $response['results'] = $gateways->results;
+                        }else{
+                        	$response['status'] = 'faliure';
+				            $response['status_code'] = 500;
+						    $response['message'] = "payment gateways not found";
+						    
+                        }
+					    return $response;
+
+		}
+
+        public function wc_rest_order_history_endpoint_handler($request_data){
+				        $response = array();
+				        $response['status'] = null;
+				        $response['status_code'] = null;
+				        $response['message'] = null;
+				        $response['api'] = 'ck_api';
+				        $response['results'] = null;
+				        
+                        $woocommerce =  $this->get_api_client_object();
+					     $parameters = $request_data->get_params();
+					    $headers = getallheaders();
+
+					     $verifier = $headers['authtoken'];
+					     $user_id = $headers['user_id'];
+						
+					      if (empty($user_id)) {
+					      	$response['status'] = 'faliure';
+				            $response['status_code'] = 404;
+						    $response['message'] = "user_id field 'user_id' is required.";
+						    return $response;
+						  }
+
+						  if (empty($verifier)) {
+						  	$response['status'] = 'faliure';
+				            $response['status_code'] = 404;
+						    $response['message'] = "token field 'token' is required.";
+						    return $response;
+						  }
+                          if($this->chek_user_login($user_id, $verifier)){
+                          $orders = $woocommerce->get('orders', $parameters);
+                          
+								if (!empty($orders->results)) {
+		                        	   $response['status'] = 'success';
+						 			   $response['status_code'] = 200;
+									   $response['message'] = "orders Data Successful.";
+									   $response['results'] = $orders->results;
+		                        }else{
+		                        	$response['status'] = 'faliure';
+						            $response['status_code'] = 500;
+								    $response['message'] = "orders not found";
+								    
+		                        }
+						  }else{
+						  	    $response['status'] = 'faliure';
+				                $response['status_code'] = 100;
+						        $response['message'] = "authentication error";
+						        
+						  }
+						  return $response;
+		}
+         public function wc_rest_transaction_history_detail_endpoint_handler($request_data){
+				        $response = array();
+				        $response['status'] = null;
+				        $response['status_code'] = null;
+				        $response['message'] = null;
+				        $response['api'] = 'ck_api';
+				        $response['results'] = null;
+				        
+                        $woocommerce =  $this->get_api_client_object();
+					     $parameters = $request_data->get_params();
+					    $headers = getallheaders();
+
+					     $verifier = $headers['authtoken'];
+					     $user_id = $headers['user_id'];
+
+						
+					      if (empty($user_id)) {
+					      	$response['status'] = 'faliure';
+				            $response['status_code'] = 404;
+						    $response['message'] = "user_id field 'user_id' is required.";
+						    return $response;
+						  }
+
+						  if (empty($verifier)) {
+						  	$response['status'] = 'faliure';
+				            $response['status_code'] = 404;
+						    $response['message'] = "token field 'token' is required.";
+						    return $response;
+						  }
+
+						    if ( empty( $parameters['id'] ) ) {
+								$response['status'] = 'faliure';
+				                $response['status_code'] = 404;
+						        $response['message'] = "id is required.";
+						        return $response;
+						  }
+                          if($this->chek_user_login($user_id, $verifier)){
+                              	$order_id = $parameters['id'];
+                                 $order = $woocommerce->get('orders/'.$order_id);
+                          
+								if ($order->results) {
+		                        	   $response['status'] = 'success';
+						 			   $response['status_code'] = 200;
+									   $response['message'] = "transaction Data Successful.";
+									   $response['results'] = $order->results;
+		                        }else{
+		                        	$response['status'] = 'faliure';
+						            $response['status_code'] = 500;
+								    $response['message'] = "transaction not found";
+								    
+		                        }
+						  }else{
+						  	    $response['status'] = 'faliure';
+				                $response['status_code'] = 100;
+						        $response['message'] = "authentication error";
+						        
+						  }
+						  return  $response;
+		}
+		
+
+		public function wc_rest_user_endpoint_edit_profile_handler($request = null) {
+				      $parameters = $request->get_json_params();
+					  $response = array();
+					  $response['status'] = null;
+					  $response['status_code'] = null;
+					  $response['message'] = null;
+					  $response['api'] = 'ck_api';
+					  $response['results'] = null;
+					  $first_name = sanitize_text_field($parameters['first_name']);
+					  $last_name = sanitize_text_field($parameters['last_name']);
+					  $company = sanitize_text_field($parameters['company']);
+					  $email = sanitize_text_field($parameters['email']);
+					  $phone = sanitize_text_field($parameters['phone']);
+					  $billing_address = sanitize_text_field($parameters['address']);
+
+					  $city = sanitize_text_field($parameters['city']);
+					  $postal_code = sanitize_text_field($parameters['postal_code']);
+					  $country = sanitize_text_field($parameters['country']);
+					  $state = sanitize_text_field($parameters['state']);
+
+					    $headers = getallheaders();
+
+					     $verifier = $headers['authtoken'];
+					     $user_id = $headers['user_id'];
+
+						
+					      if (empty($user_id)) {
+					      	$response['status'] = 'faliure';
+				            $response['status_code'] = 404;
+						    $response['message'] = "user_id field 'user_id' is required.";
+						    return $response;
+						  }
+
+						  if (empty($verifier)) {
+						  	$response['status'] = 'faliure';
+				            $response['status_code'] = 404;
+						    $response['message'] = "token field 'token' is required.";
+						    return $response;
+						  }
+					  
+					  if($this->chek_user_login($user_id, $verifier)){
+                         if ($first_name) {
+                         	update_user_meta( $user_id, 'first_name', $first_name );
+                         	update_user_meta( $user_id, 'billing_first_name', $first_name );
+                         }
+                         if ($first_name) {
+                         	update_user_meta( $user_id, 'last_name', $first_name );
+                         	update_user_meta( $user_id, 'billing_last_name', $last_name );
+                         }
+                          if ($email) {
+                         	update_user_meta( $user_id, 'billing_email', $email );
+                         	
+                         }
+					  	 
+					  	 if ($billing_address) {
+                         	 update_user_meta( $user_id, 'billing_address_1', $billing_address );
+                         }
+                         if ($city) {
+                         	 update_user_meta( $user_id, 'billing_city', $city );
+                         }
+					     if ($country) {
+                         	update_user_meta( $user_id, 'billing_country', $country );
+                         }
+                         if ($phone) {
+                         	update_user_meta( $user_id, 'billing_phone', $phone );
+                         }
+                         if ($state) {
+                         	update_user_meta( $user_id, 'billing_state', $state );
+                         }
+                         if ($postal_code) {
+                         	update_user_meta( $user_id, 'billing_postcode', $postal_code );
+                         }
+
+                                  $userdata = $this->get_user_info_arry($user_id);
+					                $response['status'] = 'success';
+						 		    $response['status_code'] = 200;
+									$response['message'] = "Data update Successful.";
+									$response['results'] = $userdata;
+                              
+					   }else{
+						  	    $response['status'] = 'faliure';
+				                $response['status_code'] = 100;
+						        $response['message'] = "authentication error";
+						        
+						}
+						  return  $response;
+					      	
+					    
+					   
+            }
+
+	
 }
 
 new Api_Function();
